@@ -1,5 +1,5 @@
 '''
-This is a demo/test project to train a XGBoost model for .
+This is a demo/test project to train a XGBoost model for iris data set.
 Structure:
     1. load dataset: iris
     2. exploratory data analysis
