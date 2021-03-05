@@ -2,7 +2,9 @@
 import numpy as np
 from sklearn import datasets
 import pandas as pd
-import math
+from scipy.spatial.distance import cdist
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 # sample data set
 # In fact, this data set is dict-type, so we need to transform it.
@@ -13,48 +15,26 @@ data = pd.DataFrame(iris['data'][:, [0, 1]], columns=['sepal length', 'sepal wid
 
 
 # implement k-means clustering algorithm
-def EuclidDistance(x, y):
-    return math.sqrt(sum(pow((x - y), 2)))
-
-
-def AllocateCluster(data, centroid, k):
-    cluster = []
-    sse = []
-    for i in range(len(data)):
-        temp_dist = []
+def kmeans(data, k, max_iterations, random_seed=1):
+    np.random.seed(random_seed)
+    init_ind = np.random.choice(len(data), k)
+    centroids = data.iloc[init_ind, :]
+    dist = cdist(data, centroids)
+    clusters = np.array([np.argmin(i) for i in dist])
+    for i in range(max_iterations):
+        centroids = []
         for j in range(k):
-            temp_dist.append(EuclidDistance(data.loc[i, :], centroid.loc[j, :]))
-        cluster.append(np.nanargmin(temp_dist))
-        sse.append(sum(pow(min(temp_dist) - centroid.iloc[np.nanargmin(temp_dist), :], 2)))
-    return cluster, sse
+            temp = np.array(data[clusters == j].mean())
+            centroids.append(temp)
+        dist = cdist(data, centroids)
+        clusters = np.array([np.argmin(i) for i in dist])
+        return clusters
 
 
-def FindCentroid(data, cluster_list, k):
-    dim = data.shape[1]
-    centroid_mat = np.zeros((k, dim))
-    for i in range(k):
-        ind = np.where(cluster_list == i)
-        centroid_mat[i, :] = np.mean(data.iloc(ind))
-    return pd.DataFrame(centroid_mat)
-
-
-def Kmeans(data, k, max_iteration, min_sse_lifting):
-    """
-
-    :param data: data set to implement clustering algorithm
-    :param k: number of clusters
-    :param max_iteration: maximum number of iteration
-    :param min_sse_lifting: threshold of lift of SSE between current iteration and last iteration
-    :return:
-    """
-    init_centroid = data.sample(n=k)
-    cluster, last_sse = AllocateCluster(data, init_centroid)[0], AllocateCluster(data, init_centroid)[1]
-    iteration = 1
-    sse_lifting = min_sse_lifting + 1
-    while iteration <= max_iteration and sse_lifting > min_sse_lifting:
-        centroid = FindCentroid(data, cluster, k)
-        cluster, current_sse = AllocateCluster(data, centroid, k)[0], AllocateCluster(data, centroid, k)[1]
-        sse_lifting = current_sse - last_sse
-        last_sse = current_sse
-        iteration += 1
-    return cluster
+# visualization
+# sns.scatterplot(data.iloc[:,0], data.iloc[:,1])
+clusters = kmeans(data, 4, 100)
+for i in np.unique(clusters):
+    plt.scatter(data.iloc[clusters == i, 0], data.iloc[clusters == i, 1], label=i)
+plt.legend()
+plt.show()
